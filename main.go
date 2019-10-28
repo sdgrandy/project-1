@@ -1,53 +1,73 @@
 package main
 
 import (
-    "bufio"
-    "os/exec"
-    "fmt"
-    "strings"
+	"fmt"
+
+	"golang.org/x/crypto/ssh"
 )
 
+const (
+	remoteUser string = "user1"
+	remoteHost string = "192.168.56.103"
+	port       string = "22"
+	// bash script to traverse home directory of remote user
+	bashScript = `
+		traverse() {
+        	for file in "$1"/*
+        	do
+                	if [ -d "$file" ]; then 
+                        	echo "*directory* ${file##*/} in $1" 
+                        	traverse "$file"
+                	fi
+                	if [ -f "$file" ]; then
+                        	echo "*file* ${file##*/} in $1 "
+				echo "*beginFile*"
+                        	#less "$file"
+				echo "*endFile*"
+                	fi
+        	done
+     		}
+     		traverse "/home/user1"`
+)
 
 func main() {
-    var line string
-    var words []string
-    bashScript := `
-	traverse() {
-        for file in "$1"/*
-        do
-                if [ -d "$file" ]; then 
-                        echo "*directory* ${file##*/} in $1" 
-                        traverse "$file"
-                fi
-                if [ -f "$file" ]; then
-                        echo "*file* ${file##*/} in $1 "
-			echo "*beginFile*"
-                        #less "$file"
-			echo "*endFile*"
-                fi
-        done
-     	}
-     	traverse "/home/user1"`
-    
-    cmd := exec.Command("ssh", "user1@192.168.56.103", bashScript)
-    // "ps -eo pid;touch file101.txt")
-    reader, _ := cmd.StdoutPipe()
-    scanner := bufio.NewScanner(reader)
-    go func() {
-	for scanner.Scan() {
-		line = scanner.Text()
-		words = strings.Fields(line)
-		fmt.Println(words[0])
+	// connect to remote host
+	connection, session := connect()
+
+	// execute bash script on remote host and return its combined standard output and standard error
+	out, err := session.CombinedOutput(bashScript)
+	if err != nil {
+		panic(err)
 	}
-    }()
-    /*cmd.Stdout = &out
-    err := cmd.Run()
-    if err != nil {
-        log.Fatal(err)
-    } else {
-	fmt.Println(out.String())
-    }
-    cmd.Run()*/
-    cmd.Start()
-    cmd.Wait()
+	fmt.Println(string(out))
+	connection.Close()
+}
+
+func connect() (*ssh.Client, *ssh.Session) {
+	var pw string
+	fmt.Print("password: ")
+	fmt.Scan(&pw)
+	fmt.Print("\n")
+
+	// configure authentication
+	sshConfig := &ssh.ClientConfig{
+		User:            remoteUser,
+		Auth:            []ssh.AuthMethod{ssh.Password(pw)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	// start a client connection to SSH server
+	connection, err := ssh.Dial("tcp", remoteHost+":"+port, sshConfig)
+	if err != nil {
+		connection.Close()
+		panic(err)
+	}
+	// create session
+	session, err := connection.NewSession()
+	if err != nil {
+		session.Close()
+		panic(err)
+	}
+
+	return connection, session
 }
