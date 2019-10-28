@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"bufio"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -31,15 +33,25 @@ const (
 )
 
 func main() {
-	// connect to remote host
+	var line string
+	var words []string
+
+	//connect to remote host
 	connection, session := connect()
 
 	// execute bash script on remote host and return its combined standard output and standard error
-	out, err := session.CombinedOutput(bashScript)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(out))
+	out, _ := session.CombinedOutput(bashScript)
+	// cast bytes to string
+	text := string(out)
+	
+	reader := strings.NewReader(text)
+	scanner := bufio.NewScanner(reader)
+	// print first word of each line
+	for scanner.Scan(){
+		line = scanner.Text()
+		words = strings.Fields(line)
+		fmt.Println(words[0])
+	}	
 	connection.Close()
 }
 
