@@ -12,72 +12,52 @@ const (
 	remoteUser string = "user1"
 	remoteHost string = "192.168.56.103"
 	port       string = "22"
-	// bash script to traverse home directory of remote user
+	// bash script to get info from proc directory
 	bashScript = `
-		traverse() {
-        	for file in "$1"/*
-        	do
-                	if [ -d "$file" ]  
-                        then 
-				echo "*directory* ${file##*/} in $1" 
-                        	traverse "$file"
-                	elif [ -f "$file" ]
-			then
-                        	echo "*file* ${file##*/} in $1 "
-                	fi
-        	done
-     		}
-     		traverse "/home/user1"`
+		regex="^-?[0-9]+$"
+        	dir="/proc"
+		for file in "$dir"/*
+		do
+			if [[ ${file##*/} =~ $regex ]]
+	  	   	then 
+				#printf "%s\n" "$file"
+				cat $file/stat
+			fi 
+		done`
 )
 
-type RegFile struct {
-	location string
+type Process struct {
+	pid string
 	name string
+	state string
+	ppid string
+	priority string
+	niceness string
 }
 
-type Dir struct {
-	location string
-	name string
-	children []string
-}
-
-var Files []RegFile
-var Dirs []Dir
+var Processes []Process
 var pw string
 
 func main() {
-	var line string
+	var line, text string
 	var words []string
         var out []byte
-	
-	out = executeCommand("cd project-0;cat main.go")
-	
-	// cast bytes to string and display
-	text := string(out)
-	fmt.Println(text)
 
-	// print home directory
+	// execute bashScript and get output
 	out =  executeCommand(bashScript)
 	text = string(out)
 	reader := strings.NewReader(text)
 	scanner := bufio.NewScanner(reader)
 
-	// store contents of home directory in structs
+	// store output in structs
 	for scanner.Scan(){
 		line = scanner.Text()
 		words = strings.Fields(line)
-
-		if words[0] == "*directory*" {
-			fmt.Println(line)
-			var d = Dir{location: words[3], name: words[1], children: nil}
-			Dirs = append(Dirs,d)
-		} else if words[0] == "*file*" {
-			fmt.Println(line)
-			var f = RegFile{location: words[3], name: words[1]}
-			Files = append(Files,f)
-			addChildFile(f)
-		} 
+		words[1] = removeParentheses(words[1])
+		var process = Process{pid:words[0],name:words[1],state:words[2],ppid:words[3],priority:words[17],niceness:words[18]}
+		Processes = append(Processes, process) 
 	}
+	printProcesses()
 }
 
 func connect() (*ssh.Client, *ssh.Session) {
@@ -118,15 +98,14 @@ func executeCommand(cmd string) []byte {
         defer session.Close()
      	return out
 }
-func addChildFile(f RegFile) {
-	lastIndex := strings.LastIndex(f.location,"/")
-	runes := []rune(f.location)
-	sub := string(runes[0:lastIndex])
-	for _,v := range Dirs{
-		if v.location == sub {
-			v.children = append(v.children,string(runes[lastIndex+1]))
-		}
+func printProcesses(){
+	for _,p := range(Processes){
+		fmt.Printf("pid: %s, name: %s, state: %s, ppid: %s, priority: %s, niceness: %s\n",p.pid,p.name,p.state,p.ppid,p.priority,p.niceness)
 	}
 }
-
+func removeParentheses(s string) string {
+	var runes = []rune(s)
+	runes = runes[1:len(runes)-1]
+	return string(runes)
+}
 
