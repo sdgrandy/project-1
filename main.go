@@ -17,50 +17,75 @@ const (
 		traverse() {
         	for file in "$1"/*
         	do
-                	if [ -d "$file" ]; then 
-                        	echo "*directory* ${file##*/} in $1" 
+                	if [ -d "$file" ]  
+                        then 
+				echo "*directory* ${file##*/} in $1" 
                         	traverse "$file"
-                	fi
-                	if [ -f "$file" ]; then
+                	elif [ -f "$file" ]
+			then
                         	echo "*file* ${file##*/} in $1 "
-				echo "*beginFile*"
-                        	#less "$file"
-				echo "*endFile*"
                 	fi
         	done
      		}
      		traverse "/home/user1"`
 )
 
+type RegFile struct {
+	location string
+	name string
+}
+
+type Dir struct {
+	location string
+	name string
+	children []string
+}
+
+var Files []RegFile
+var Dirs []Dir
+var pw string
+
 func main() {
 	var line string
 	var words []string
-
-	//connect to remote host
-	connection, session := connect()
-
-	// execute bash script on remote host and return its combined standard output and standard error
-	out, _ := session.CombinedOutput(bashScript)
-	// cast bytes to string
-	text := string(out)
+        var out []byte
 	
+	out = executeCommand("cd project-0;cat main.go")
+	
+	// cast bytes to string and display
+	text := string(out)
+	fmt.Println(text)
+
+	// print home directory
+	out =  executeCommand(bashScript)
+	text = string(out)
 	reader := strings.NewReader(text)
 	scanner := bufio.NewScanner(reader)
-	// print first word of each line
+
+	// store contents of home directory in structs
 	for scanner.Scan(){
 		line = scanner.Text()
 		words = strings.Fields(line)
-		fmt.Println(words[0])
-	}	
-	connection.Close()
+
+		if words[0] == "*directory*" {
+			fmt.Println(line)
+			var d = Dir{location: words[3], name: words[1], children: nil}
+			Dirs = append(Dirs,d)
+		} else if words[0] == "*file*" {
+			fmt.Println(line)
+			var f = RegFile{location: words[3], name: words[1]}
+			Files = append(Files,f)
+			addChildFile(f)
+		} 
+	}
 }
 
 func connect() (*ssh.Client, *ssh.Session) {
-	var pw string
-	fmt.Print("password: ")
-	fmt.Scan(&pw)
-	fmt.Print("\n")
-
+	if pw == "" {
+		fmt.Print("password: ")
+		fmt.Scan(&pw)
+		fmt.Print("\n")
+	}
 	// configure authentication
 	sshConfig := &ssh.ClientConfig{
 		User:            remoteUser,
@@ -83,3 +108,25 @@ func connect() (*ssh.Client, *ssh.Session) {
 
 	return connection, session
 }
+func executeCommand(cmd string) []byte {
+	 //connect to remote host
+        connection, session := connect()
+        // execute bash script on remote host and return its combined standard output and standard error
+        out, _ := session.CombinedOutput(cmd)
+
+        defer connection.Close()
+        defer session.Close()
+     	return out
+}
+func addChildFile(f RegFile) {
+	lastIndex := strings.LastIndex(f.location,"/")
+	runes := []rune(f.location)
+	sub := string(runes[0:lastIndex])
+	for _,v := range Dirs{
+		if v.location == sub {
+			v.children = append(v.children,string(runes[lastIndex+1]))
+		}
+	}
+}
+
+
