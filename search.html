@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<head>
+<title>
+</title>
+</head>
+
+<body>
+<div>
+{{ if .NotFound }}
+No results found.
+{{ else }}
+<table border="1">
+<tr>
+<th>pid</th>
+<th>process name</th>
+<th>state</th>
+<th>ppid</th>
+<th>priority</th>
+<th>niceness</th>
+<th>
+</tr>
+{{ range .Proc }}
+        <tr>
+        <td>{{ .Pid }}</td>
+        <td>{{ .Name }}</td>
+        <td>{{ .State }}</td>
+	<td>{{ .Ppid }}</td>
+        <td>{{ .Priority }}</td>
+        <td>{{ .Niceness }}</td>
+        </tr>
+{{ end }}
+</table>
+{{ end }}
+</div>
+<br>
+<a href="/">Return to home page</a>
+</body>
+
+</html>

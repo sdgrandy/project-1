@@ -4,11 +4,27 @@
 </title>
 </head>
 <body>
+
+<div>
+<form method="POST" action="/search">
+<label>Search for:</label>
+<input type="text" name="query">
+<select name="choice">
+<option value="byname">by name</option>
+<option value="bypid">by pid</option>
+<option value="byppid">by ppid</option>
+</select>
+<input type="submit" value="search">
+</form>
+</div>
+<br><br>
+<div>
 <table border="1">
 <tr>
 <th>pid</th>
 <th>process name</th>
 <th>state</th>
+<th>ppid</th>
 <th>priority</th>
 <th>niceness</th>
 <th>
@@ -18,10 +34,12 @@
 	<td>{{ .Pid }}</td>
 	<td>{{ .Name }}</td>
 	<td>{{ .State }}</td>
+	<td>{{ .Ppid }}</td>
         <td>{{ .Priority }}</td>
 	<td>{{ .Niceness }}</td>
 	</tr>
 {{ end }}
 </table>
+</div>
 </body>
 </html>
