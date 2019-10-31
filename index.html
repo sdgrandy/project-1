@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<head>
+<title>
+</title>
+</head>
+<body>
+<table border="1">
+<tr>
+<th>pid</th>
+<th>process name</th>
+<th>state</th>
+<th>priority</th>
+<th>niceness</th>
+<th>
+</tr>
+{{ range .Proc }}
+	<tr>
+	<td>{{ .Pid }}</td>
+	<td>{{ .Name }}</td>
+	<td>{{ .State }}</td>
+        <td>{{ .Priority }}</td>
+	<td>{{ .Niceness }}</td>
+	</tr>
+{{ end }}
+</table>
+</body>
+</html>

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"bufio"
 	"strings"
+	"net/http"
+	"html/template"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -27,12 +29,16 @@ const (
 )
 
 type Process struct {
-	pid string
-	name string
-	state string
-	ppid string
-	priority string
-	niceness string
+	Pid string
+	Name string
+	State string
+	Ppid string
+	Priority string
+	Niceness string
+}
+
+type ViewInfo struct {
+	Proc []Process
 }
 
 var Processes []Process
@@ -54,10 +60,12 @@ func main() {
 		line = scanner.Text()
 		words = strings.Fields(line)
 		words[1] = removeParentheses(words[1])
-		var process = Process{pid:words[0],name:words[1],state:words[2],ppid:words[3],priority:words[17],niceness:words[18]}
+		var process = Process{Pid:words[0],Name:words[1],State:words[2],Ppid:words[3],Priority:words[17],Niceness:words[18]}
 		Processes = append(Processes, process) 
 	}
-	printProcesses()
+	//printProcesses()
+	http.HandleFunc("/",index)
+        http.ListenAndServe(":7000",nil)
 }
 
 func connect() (*ssh.Client, *ssh.Session) {
@@ -100,7 +108,7 @@ func executeCommand(cmd string) []byte {
 }
 func printProcesses(){
 	for _,p := range(Processes){
-		fmt.Printf("pid: %s, name: %s, state: %s, ppid: %s, priority: %s, niceness: %s\n",p.pid,p.name,p.state,p.ppid,p.priority,p.niceness)
+		fmt.Printf("pid: %s, name: %s, state: %s, ppid: %s, priority: %s, niceness: %s\n",p.Pid,p.Name,p.State,p.Ppid,p.Priority,p.Niceness)
 	}
 }
 func removeParentheses(s string) string {
@@ -109,3 +117,13 @@ func removeParentheses(s string) string {
 	return string(runes)
 }
 
+func index(response http.ResponseWriter, request *http.Request) {
+	temp, _ := template.ParseFiles("index.html")
+	v := ViewInfo{}
+	v.Proc = Processes
+	fmt.Println("name:",Processes[0].Name)	
+	temp.Execute(response, v)
+	//out := []byte("This is a webpage")
+
+	//response.Write(out)
+}
