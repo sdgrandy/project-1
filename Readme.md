@@ -1,1 +1,1 @@
-This is an application which can log into a remote machine through SSH and obtain information about current processes.
+This is an application which can log into a remote machine through SSH and obtain information about current processes. The user can search by pid, ppid, and name. Information about processes can also be viewed as a tree.
