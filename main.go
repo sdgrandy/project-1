@@ -20,7 +20,6 @@ const (
 		do
 			if [[ ${file##*/} =~ $regex ]]
 	  	   	then 
-				#printf "%s\n" "$file"
 				cat $file/stat
 			fi 
 		done`
@@ -62,13 +61,10 @@ func connect() (*ssh.Client, *ssh.Session) {
 	if remoteUser == "" {
 		fmt.Print("remoteUser: ")
                 fmt.Scan(&remoteUser)
-                fmt.Print("\n")
 		fmt.Print("remoteHost: ")
                 fmt.Scan(&remoteHost)
-                fmt.Print("\n")
 		fmt.Print("password: ")
 		fmt.Scan(&pw)
-		fmt.Print("\n")
 	}
 	// configure authentication
 	sshConfig := &ssh.ClientConfig{
@@ -123,16 +119,13 @@ func index(response http.ResponseWriter, request *http.Request) {
 	}
 	// send information about processes in response
 	v := ViewInfo{}
-	//printTree(Process{Pid: "0"},"")
 	v.Proc = Processes
 	temp.Execute(response, v)
 }
 func tree(response http.ResponseWriter, request *http.Request){
 	temp, _ := template.ParseFiles("tree.html")
 	p := Process{Pid: "0",Name: "", State: "", Ppid: "", Priority: "", Niceness: ""}
-	html = "<!DOCTYPE html><head><title></title></head><body>"
 	printTree(p)
-	html += "</body></html>"
 	v := ViewInfo{}
 	v.Html = template.HTML(html)
 	temp.Execute(response, v)	
